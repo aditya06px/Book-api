@@ -1,10 +1,17 @@
+require('dotenv').config();
+
 const database = require('./database/database.js');
 // import { books , authors , publications } from "./database/database.js";
+
+const mongoose = require('mongoose');
 
 const express = require('express');
 const app = express();
 
 app.use(express.json());
+
+ mongoose.connect(process.env.MONGO_URL)
+.then(()=> console.log("mongodb connected"));
 
 
         //    BOOKS   // 
