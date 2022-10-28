@@ -1,13 +1,20 @@
 require('dotenv').config();
 
+// database 
 const database = require('./database/database.js');
-// import { books , authors , publications } from "./database/database.js";
 
 const mongoose = require('mongoose');
 
+// Models
+const BookModels = require('./database/book');
+const AuthorModels = require('./database/author');
+const PublicationModels = require('./database/publication');
+
+// Initializing Express
 const express = require('express');
 const app = express();
 
+// Configurations
 app.use(express.json());
 
  mongoose.connect(process.env.MONGO_URL)
