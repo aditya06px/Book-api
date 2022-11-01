@@ -6,9 +6,9 @@ const database = require('./database/database.js');
 const mongoose = require('mongoose');
 
 // Models
-const BookModels = require('./database/book');
-const AuthorModels = require('./database/author');
-const PublicationModels = require('./database/publication');
+const BookModel = require('./database/book');
+const AuthorModel = require('./database/author');
+const PublicationModel = require('./database/publication');
 
 // Initializing Express
 const express = require('express');
@@ -30,9 +30,10 @@ app.use(express.json());
     METHOD       :  GET
 */
 
-app.get('/',(req,res)=> {
-    return res.json({
-        books: database.books
+app.get('/',async (req,res)=> {
+    const getAllBooks = await BookModel.find();
+    res.json({
+        books: getAllBooks
     })
 })
 
@@ -44,14 +45,12 @@ app.get('/',(req,res)=> {
     METHOD       :  GET
 */
 
-app.get('/is/:isbn',(req,res)=> {
+app.get('/is/:isbn', async (req,res)=> {
 
-    const getSpecificBook = database.books.filter((book) => {
-      return book.ISBN === req.params.isbn;
-    })
+    const getSpecificBook = await BookModel.findOne({ISBN: req.params.isbn})
 
-    if(getSpecificBook.length === 0) {
-        res.json({Error : `book of id ${req.params.isbn} did not found`});
+    if(!getSpecificBook) {
+        res.json({Error : `book of isbn ${req.params.isbn} did not found`});
     }
 
     res.json({ book : getSpecificBook});
@@ -65,14 +64,14 @@ app.get('/is/:isbn',(req,res)=> {
     METHOD       :  GET
 */
 
-app.get('/c/:category',(req,res)=> {
-    const getAllBooksOfCategory = database.books.filter((book)=> {
-        return book.category.includes(req.params.category);
-    })
-
-    if(getAllBooksOfCategory.length === 0) {
+app.get('/c/:category', async (req,res)=> {
+    const getAllBooksOfCategory = await BookModel.findOne({category:req.params.category})
+    // const getAllBooksOfCategory = database.books.filter((book)=> {
+    //     return book.category.includes(req.params.category);
+    // })
+    if(!getAllBooksOfCategory) {
         return res.json({
-            Error: `No book found for the category of ${req.param.category} `
+            Error: `No book found for the category of ${req.params.category} `
     })
     }
 
@@ -83,16 +82,18 @@ app.get('/c/:category',(req,res)=> {
     ROUTE        :  /a
     DESCRIPTION  :  get list of books based on author
     ACCESS       :  public
-    PARAMETERS   :  author
-    METHOD       :  GET
+    PARAMETERS   :  author 
+    METHOD       :  GET             // INCOMPLETE
 */
 
-app.get('/a/:authorId',(req,res) => {
-    const getAllBooksOfAuthor = database.books.filter((book)=> {
-       return book.authors.includes(parseInt(req.params.authorId));
-    })
+app.get('/a/:authorId', async (req,res) => {
 
-    if(getAllBooksOfAuthor.length == 0) {
+    const getAllBooksOfAuthor = await BookModel.find({authors: parseInt(req.params.authorId)});
+    // const getAllBooksOfAuthor = database.books.filter((book)=> {
+    //    return book.authors.includes(parseInt(req.params.authorId));
+    // })
+
+    if(!getAllBooksOfAuthor) {
         return res.json({
             Error: `books of ${req.params.authorId} author not available `
         })
@@ -113,9 +114,10 @@ app.get('/a/:authorId',(req,res) => {
     PARAMETERS   :  none
     METHOD       :  GET
 */
-app.get('/authors',(req,res)=> {
+app.get('/authors', async (req,res)=> {
+    const getAllAuthors = await AuthorModel.find();
     res.json({
-        authors: database.authors
+        authors: getAllAuthors
     })
 })
 
@@ -126,19 +128,20 @@ app.get('/authors',(req,res)=> {
     PARAMETERS   :  isbn
     METHOD       :  GET
 */
-app.get('/authors/:isbn',(req,res)=> {
-    const getSpecificAuthors = database.authors.filter((author)=> {
-        return author.books.includes(req.params.isbn);
-    })
+app.get('/authors/:isbn', async (req,res)=> {
+    const getSpecificBooksOfAuthors = await AuthorModel.find({books: req.params.isbn});
+    // const getSpecificAuthors = database.authors.filter((author)=> {
+    //     return author.books.includes(req.params.isbn);
+    // })
 
-    if(getSpecificAuthors.length === 0) {
+    if(!getSpecificBooksOfAuthors) {
         return res.json({
             Error: `author ${req.params.isbn} did not found`
         })
     }
 
     res.json({
-        author : getSpecificAuthors
+        author : getSpecificBooksOfAuthors
     })
 })
 
@@ -146,21 +149,23 @@ app.get('/authors/:isbn',(req,res)=> {
     ROUTE        :  /authors/a
     DESCRIPTION  :  get specific author id
     ACCESS       :  public
-    PARAMETERS   :  id                // INCOMPLETE
+    PARAMETERS   :  id                
     METHOD       :  GET
 */
-app.get('/authors/a/:id',(req,res)=> {
-    const author = database.authors.filter((author)=> {
-       return author.id === parseInt(req.params.id)
-    })
-    if(author.length === 0) {
+app.get('/authors/a/:id', async (req,res)=> {
+
+    const getAuthor = await AuthorModel.findOne({id: parseInt(req.params.id)})
+    // const author = database.authors.filter((author)=> {
+    //    return author.id === parseInt(req.params.id)
+    // })
+    if(!getAuthor) {
         return res.json({
             Error: `No Author found with id ${req.params.id}`
         })
     }
    
     return res.json({
-        authors : author
+        authors : getAuthor
     })
 
 })
@@ -173,11 +178,14 @@ app.get('/authors/a/:id',(req,res)=> {
     DESCRIPTION  :  get all publications
     ACCESS       :  public
     PARAMETERS   :  none
-    METHOD       :  GET
+    METHOD       :  GET   // INCOMPLETE 
 */      
-app.get('/publications',(req,res)=> {
-    return res.json({
-        publications: database.publications
+app.get('/publications', async (req,res)=> {
+    
+    const getAllPublications = await PublicationModel.find();
+
+    res.json({
+        publications: getAllPublications
     })
 })
 
@@ -189,19 +197,22 @@ app.get('/publications',(req,res)=> {
     METHOD       :  GET
 */
 
-app.get('/publications/:isbn',(req,res)=> {
-    const publication = database.publications.filter((publication)=> {
-       return  publication.books.includes(req.params.isbn);
-    })
+app.get('/publications/:isbn', async (req,res)=> {
+    const getSpecificPublication = await PublicationModel.find(
+        {books: req.params.isbn}
+    );
+    // const publication = database.publications.filter((publication)=> {
+    //    return  publication.books.includes(req.params.isbn);
+    // })
 
-    if(publication.length === 0) {
+    if(!getSpecificPublication) {
         return res.json({
             Error: `No book found for publication ${req.params.isbn}`
         })
     }
 
     return res.json({
-        publication : publication
+        publication : getSpecificPublication
     })
 })
 
@@ -209,21 +220,23 @@ app.get('/publications/:isbn',(req,res)=> {
     ROUTE        :  /publications/p
     DESCRIPTION  :  get specific publication with id
     ACCESS       :  public
-    PARAMETERS   :  id                // INCOMPLETE
+    PARAMETERS   :  id                
     METHOD       :  GET
 */
-app.get('/publications/p/:id',(req,res)=> {
-   const publication = database.publications.filter((publication)=> {
-    return publication.id === parseInt(req.params.id);
-   })
-   if(publication.length === 0) {
+app.get('/publications/p/:id', async (req,res)=> {
+    console.log("this is publication route");
+   const getSpecificPublication = await PublicationModel.findOne({id: parseInt(req.params.id)}) 
+//    const publication = database.publications.filter((publication)=> {
+//     return publication.id === parseInt(req.params.id);
+//    })
+   if(!getSpecificPublication ) {
     return res.json({
         Error: `No publication found with this id of ${req.params.id} `
     })
    }
 
    res.json({
-    publication 
+    publication : getSpecificPublication
    });
 })
 
@@ -236,11 +249,10 @@ app.get('/publications/p/:id',(req,res)=> {
     PARAMETERS   :  none
     METHOD       :  POST
 */
-app.post('/book/new', (req,res)=> {
-    const newBook = req.body ;
-    database.books.push(newBook);
+app.post('/book/new', async (req,res)=> {
+    const {newBook} = req.body ;
+    await BookModel.create(newBook);
     res.json({
-        books:database.books,
         message: 'book was added'
     })
 })
@@ -253,11 +265,10 @@ app.post('/book/new', (req,res)=> {
     METHOD       :  POST
 */
 
-app.post("/author/new",(req,res)=> {
-    const newAuthor = req.body;
-    database.authors.push(newAuthor);
+app.post("/author/new", async (req,res)=> {
+    const {newAuthor} = req.body;
+    await AuthorModel.create(newAuthor); 
     res.json({
-        authors:database.authors,
         message: 'new author was added'
     })
 })
@@ -269,12 +280,10 @@ app.post("/author/new",(req,res)=> {
     PARAMETERS   :  none
     METHOD       :  POST
 */
-app.post('/publication/new',(req,res)=> {
-    const newPublication = req.body ;
-    console.log(newPublication);
-    database.publications.push(newPublication);
+app.post('/publication/new', async (req,res)=> {
+    const {newPublication} = req.body ;
+    await PublicationModel.create(newPublication);
     res.json({
-        publications:database.publications,
         message: 'new publication was added'
     })
 })
@@ -287,16 +296,21 @@ app.post('/publication/new',(req,res)=> {
     METHOD       :  PUT
 */
 
-app.put('/book/update/:isbn',(req,res)=> {
-    database.books.forEach((book)=> {
-        if(book.ISBN === req.params.isbn) {
-            book.title = req.body.bookTitle;
-            return;
+app.put('/book/update/:isbn', async (req,res)=> {
+    const updatedBook = await BookModel.findOneAndUpdate(
+        {
+            ISBN: req.params.isbn
+        },
+        {
+           title: req.body.bookTitle 
+        },
+        {
+            new: true
         }
-    });
+    );
 
     res.json({
-        books: database.books,
+        books: updatedBook,
         message: "book title updated"
     })
 })
@@ -309,24 +323,41 @@ app.put('/book/update/:isbn',(req,res)=> {
     METHOD       :  PUT              
 */
 
-app.put("/book/author/update/:isbn",(req,res)=> {
+app.put("/book/author/update/:isbn", async(req,res)=> {
     // update the book database
-    database.books.forEach((book)=> {
-        if(book.ISBN === req.params.isbn) {
-            return book.authors.push(req.body.newAuthor);
+    const updatedBook = await BookModel.findOneAndUpdate(
+        {
+            ISBN: req.params.isbn
+        },
+        {
+            $addToSet : {
+                authors: req.body.newAuthor
+            }
+        },
+        {
+            new: true
         }
-    })
+    )
 
     //update the author database
-    database.authors.forEach((author)=> {
-        if(author.id === req.body.newAuthor) {
-            return author.books.push(req.params.isbn);
+    
+    const updatedAuthor = await AuthorModel.findOneAndUpdate(
+        {
+            id:req.body.newAuthor
+        },
+        {
+            $push : {
+                books: req.params.isbn
+            }
+        },
+        {
+            new: true
         }
-    })
+    )
 
     res.json({
-        books : database.books,
-        authors : database.authors,
+        books : updatedBook,
+        authors : updatedAuthor,
         message: "new author was added" 
     })
 }); 
@@ -339,15 +370,21 @@ app.put("/book/author/update/:isbn",(req,res)=> {
     METHOD       :  PUT              
 */ 
 
-app.put("/author/update/:id",(req,res)=> {
-    database.authors.forEach((author)=> {
-        if(author.id === parseInt(req.params.id)){
-            author.name = req.body.name;
-        }
-    })
+app.put("/author/update/:id", async (req,res)=> {
 
+    const updatedAuthor = await AuthorModel.findOneAndUpdate(
+        {
+            id: parseInt(req.params.id)
+        },
+        {
+            name: req.body.name
+        },
+        { 
+            new:true 
+        }
+    )
     res.json({
-        authors: database.authors,
+        author: updatedAuthor,
         message: "author updated successfully "
     })
 })
@@ -359,27 +396,47 @@ app.put("/author/update/:id",(req,res)=> {
     PARAMETERS   :  isbn
     METHOD       :  PUT             
 */
+// should remove the book from the previous publication ! important
 
-app.put('/publication/update/book/:isbn',(req,res)=>{
+app.put('/publication/update/book/:isbn', async (req,res)=>{
     //update publication database
-    database.publications.forEach((publication)=> {
-        if(publication.id === req.body.pubId) {
-            publication.books.push(req.params.isbn);
-            return;
+    const updatedPublication = await PublicationModel.findOneAndUpdate(  // returns null
+        {
+            id: req.body.pubId
+        },
+        {
+            $addToSet: {
+                books: req.params.isbn
+            }
+        },
+        {
+            new: true
         }
-    })
+    )
+    // database.publications.forEach((publication)=> {
+    //     if(publication.id === req.body.pubId) {
+    //         publication.books.push(req.params.isbn);
+    //         return;
+    //     }
+    // })
 
     //update books database
-    database.books.forEach((book)=> {
-        if(book.ISBN === req.params.isbn) {
-            book.publication = req.body.pubId;
-            return;
+    const updatedBook = await BookModel.findOneAndUpdate(
+        {
+            ISBN: req.params.isbn
+        },
+        {
+            publication: req.body.pubId
         }
-    });
+    )
+    // database.books.forEach((book)=> {
+    //     if(book.ISBN === req.params.isbn) {
+    //         book.publication = req.body.pubId;
+    //         return;
+    //     }
+    // });
 
     res.json({
-        books: database.books,
-        publications : database.publications,
         message: "Successfully updated publication"
     })
 })
@@ -392,15 +449,25 @@ app.put('/publication/update/book/:isbn',(req,res)=>{
     METHOD       :  PUT             
 */
 
-app.put("/publication/update/name/:id",(req,res)=> {
-    database.publications.forEach((publication)=> {
-        if(publication.id === parseInt(req.params.id)) {
-            publication.name = req.body.name
-        }
-    });
+app.put("/publication/update/name/:id", async (req,res)=> {
+    
+    const updatedPublication = await PublicationModel.findOneAndUpdate(
+        {
+            id: parseInt(req.params.id)
+        },
+        {
+            name: req.body.name
+        },
+        { new:true }
+    )
+    // database.publications.forEach((publication)=> {
+    //     if(publication.id === parseInt(req.params.id)) {
+    //         publication.name = req.body.name
+    //     }
+    // });
 
     res.json({
-        publications : database.publications,
+        publications : updatedPublication,
         message: "publication name changed successfully "
     })
 })
@@ -413,15 +480,21 @@ app.put("/publication/update/name/:id",(req,res)=> {
     METHOD       :  DELETE             
 */
 
-app.delete('/book/delete/:isbn',(req,res)=> {
-    const updatedDatabase = database.books.filter((book)=> {
-        return book.ISBN !== req.params.isbn;
-    })
+app.delete('/book/delete/:isbn',async (req,res)=> {
 
-    database.books = updatedDatabase;
+    const updatedDatabase = await BookModel.findOneAndDelete(
+        {
+            ISBN: req.params.isbn
+        }
+    )
+    // const updatedDatabase = database.books.filter((book)=> {
+    //     return book.ISBN !== req.params.isbn;
+    // })
+
+    // database.books = updatedDatabase;
 
     res.json({
-        books: database.books,
+        books: updatedDatabase,
         message: "book deleted successfully"
     })
 })
@@ -431,34 +504,56 @@ app.delete('/book/delete/:isbn',(req,res)=> {
     DESCRIPTION  :  delete a author from book
     ACCESS       :  public
     PARAMETERS   :  isbn , authorId
-    METHOD       :  DELETE             
+    METHOD       :  DELETE           
 */
-app.delete("/book/delete/author/:isbn/:authorId",(req,res)=> {
+app.delete("/book/delete/author/:isbn/:authorId",async (req,res)=> {
 
-    // update book databse 
-    database.books.forEach((book)=> {
-        if(book.ISBN === req.params.isbn) {
-            const newAuthorList = book.authors.filter((author)=> author !== parseInt(req.params.authorId));
-            book.authors = newAuthorList;
-        }
-    }) 
+    // update book database 
+    const updatedBook = await BookModel.findOneAndUpdate(
+        {
+            ISBN: req.params.isbn
+        },
+        {
+            $pull: {
+                authors: parseInt(req.params.authorId) 
+            }
+        },
+        {new:true}
+    )
+    // database.books.forEach((book)=> {
+    //     if(book.ISBN === req.params.isbn) {
+    //         const newAuthorList = book.authors.filter((author)=> author !== parseInt(req.params.authorId));
+    //         book.authors = newAuthorList;
+    //     }
+    // }) 
 
     //update author database
-    database.authors.forEach((author)=> {
-        if(author.id === parseInt(req.params.authorId)) {
-            const newBookList = author.books.filter((book)=> {
-                return book !== req.params.isbn
-            })
-            author.books = newBookList;
-            console.log(newBookList)
-        }
-        return;
-    })
+    const updatedAuthor = await AuthorModel.findOneAndUpdate(
+        {
+            authors: parseInt(req.params.authorId)
+        },
+        {
+            $pull: {
+                books: req.params.isbn
+            }
+        },
+        { new : true }
+    )
+    // database.authors.forEach((author)=> {
+    //     if(author.id === parseInt(req.params.authorId)) {
+    //         const newBookList = author.books.filter((book)=> {
+    //             return book !== req.params.isbn
+    //         })
+    //         author.books = newBookList;
+    //         console.log(newBookList)
+    //     }
+    //     return;
+    // })
 
     res.json({
-        book: database.books,
-        author : database.authors,
-        message : "author was deleted"
+        book: updatedBook,
+        author : updatedAuthor,
+        message : `deleted a author with id ${req.params.authorId} from book with isbn ${req.params.isbn}`
     })
 
 })
@@ -468,24 +563,45 @@ app.delete("/book/delete/author/:isbn/:authorId",(req,res)=> {
     DESCRIPTION  :  delete a Author with id 
     ACCESS       :  public
     PARAMETERS   :  id
-    METHOD       :  DELETE             
+    METHOD       :  DELETE            
 */
 
-app.delete("/author/delete/:id",(req,res)=> {
-    //delete author from author databse 
-    const updatedDatabase = database.authors.filter((author)=> {
-        return author.id !== parseInt(req.params.id);
-    })
+app.delete("/author/delete/:id", async (req,res)=> {
+    //delete author from author database
+    const updatedAuthor =  await AuthorModel.findOneAndDelete(
+        {
+            id : parseInt(req.params.id)
+        },
+        {
+            new: true
+        }
+    )
+    // const updatedDatabase = database.authors.filter((author)=> {
+    //     return author.id !== parseInt(req.params.id);
+    // })
 
-    database.authors = updatedDatabase;
+    // database.authors = updatedDatabase;
 
     //delete author from book databse
-    database.books.forEach((book)=> {
-        const author = book.authors.filter((author)=> {
-            return author !== parseInt(req.params.id);
-        })
-        book.authors = author;
-    });
+
+    const updatedBooks = await BookModel.updateMany(
+        {
+            authors : parseInt(req.params.id)
+        },
+        {
+            $pull: {
+                authors: parseInt(req.params.id)
+            }
+        },
+        {new:true}
+    )
+    // database.books.forEach((book)=> {
+
+    //     const author = book.authors.filter((author)=> {
+    //         return author !== parseInt(req.params.id);
+    //     })
+    //     book.authors = author;
+    // });
 
     res.json({
         books: database.books,
@@ -502,30 +618,53 @@ app.delete("/author/delete/:id",(req,res)=> {
     METHOD       :  DELETE             
 */
 
-app.delete("/publication/delete/book/:isbn/:pubId",(req,res)=> {
+app.delete("/publication/delete/book/:isbn/:pubId", async (req,res)=> {
 
     //update publication databse
-    database.publications.forEach((publication)=> {
-        if(publication.id === parseInt(req.params.pubId)) {
-            const newBookList = publication.books.filter((book)=> {
-                return book !== req.params.isbn
-            })
+    const updatedPublication = await PublicationModel.findOneAndUpdate (
+        {
+            id: parseInt(req.params.pubId)
+        },
+        {
+            $pullAll: {
+                books: [req.params.isbn]
+            }
+        },
+        {new: true}
+    )
+    // database.publications.forEach((publication)=> {
+    //     if(publication.id === parseInt(req.params.pubId)) {
+    //         const newBookList = publication.books.filter((book)=> {
+    //             return book !== req.params.isbn
+    //         })
 
-            publication.books  = newBookList;
-        }
-    })
+    //         publication.books  = newBookList;
+    //     }
+    // })
 
-    //update book databse 
-    database.books.forEach((book) => {
-        if(book.ISBN === req.params.isbn){
-            book.publication = 0;   // no publication available
-            return;
-        }
-    })
+    //update book databse
+    const updatedBook = await BookModel.findOneAndUpdate(
+        {
+            ISBN: req.params.isbn
+        },
+        {
+            publication: 0
+        },
+        {new: true}
+
+
+    ) 
+    // database.books.forEach((book) => {
+    //     if(book.ISBN === req.params.isbn){
+    //         book.publication = 0;   // no publication available
+    //         return;
+    //     }
+    // })
 
     res.json({
-        books: database.books,
-        publication: database.publications
+        books: updatedBook,
+        publication:  updatedPublication,
+        message: "deleted a book from publication"
     })
 })
 
@@ -537,25 +676,42 @@ app.delete("/publication/delete/book/:isbn/:pubId",(req,res)=> {
     METHOD       :  DELETE             
 */
 
-app.delete('/publication/delete/:id',(req,res)=> {
-    // delete publication from publication database 
-    const updatedDatabase = database.publications.filter((publication)=> {
-        return publication.id !== parseInt(req.params.id);
-    })
+app.delete('/publication/delete/:id', async (req,res)=> {
+    // delete publication from publication database
+    
+    const updatedPublication = await PublicationModel.findOneAndDelete(
+        {
+          id: parseInt(req.params.id)  
+        },
+        {new:true}
+    )
+    // const updatedDatabase = database.publications.filter((publication)=> {
+    //     return publication.id !== parseInt(req.params.id);
+    // })
 
-    database.publications = updatedDatabase;
+    // database.publications = updatedDatabase;
 
     //make publication equals to zero IN book database
-    database.books.forEach((book)=> {
-        if(book.publication === parseInt(req.params.id)) {
-            book.publication = 0;
-            return;
-        }
-    });
+const updatedBooks = await BookModel.updateMany(
+    {
+        publication: parseInt(req.params.id)  
+    },
+    {
+        publication:0
+    },
+    {new:true}
+)
+
+    // database.books.forEach((book)=> {
+    //     if(book.publication === parseInt(req.params.id)) {
+    //         book.publication = 0;
+    //         return;
+    //     }
+    // });
 
     res.json({
-        books: database.books,
-        publication: database.publications,
+        books: updatedPublication,
+        publication: updatedBooks,
         message: "publication deleted successfully"
     })
 })
@@ -593,8 +749,6 @@ app.listen(3000,() => {
 
 //PUT 
 // publication details NAME USING ID  -- DONE
-//update/add new book to publication  -- DONE
-
-//DELETE 
+//update/add new book to publication  -- 
 // delete a publication           --DONE
 //delete a book from publication  -- DONE
